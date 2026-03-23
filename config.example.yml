@@ -56,9 +56,9 @@ simulation_settings:
     - spring
     - fall
    
-  # Simulation levels determine at which level the simulation will run. 
+  # Simulation levels determine at which level the simulation will run.
   # Options: "energy_service" (individual services like lighting, refrigeration),
-  # "user_type" (low_consumption, high_consumption users), 
+  # "user_type" (low_consumption, high_consumption users),
   # "sector" (households, community services, income-generating activities),
   # "community" (full community simulation including all sectors).
   simulation_levels:
@@ -68,7 +68,7 @@ simulation_settings:
     - community
 
   sectors:  # The sectors involved in the simulation. Each sector contains different user types and their energy services.
-    household:
+    households:
         high_consumption:  # Household sector: Contains different user types based on consumption level.
         count: 1   # 'count' defines how many high-consumption households to simulate.
             energy_service:   # 'energy_service' lists the energy services available for this user type.
@@ -131,7 +131,7 @@ simulation_settings:
                 - water_heating
         health_post:
         count: 1
-            energy_service: 
+            energy_service:
                 - illumination
                 - ICT
                 - cold_storage
@@ -141,7 +141,7 @@ simulation_settings:
                 - medical_equip
         health_center:
         count: 1
-            energy_service: 
+            energy_service:
                 - illumination
                 - ICT
                 - cold_storage
@@ -152,7 +152,7 @@ simulation_settings:
                 - water_supply
         public_lighting:
         count: 1
-            energy_service: 
+            energy_service:
                 - illumination
             
     income_generating_activity:    # Income generating activities sector: Includes stores, workshops, etc.

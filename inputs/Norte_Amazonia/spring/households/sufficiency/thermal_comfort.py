@@ -5,7 +5,6 @@ Created on Wed Apr 23 15:48:39 2025
 
 @author: claudia
 """
-
 from ramp.core.core import User
 
 User_list = []
