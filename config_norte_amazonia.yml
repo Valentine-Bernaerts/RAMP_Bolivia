@@ -1,0 +1,120 @@
+simulation_settings:
+
+  # Seasonal simulation: runs only specified seasons
+  simulation_mode: "seasonal"
+
+  # Not used in seasonal mode
+  date_start: "2020-01-01"
+  date_end: "2020-12-31"
+
+  peak_enlarge: 0.15
+
+  output_folder: 'output_norte_amazonia'
+  parallel: false
+
+  # Season date ranges (Southern Hemisphere)
+  season_dates:
+    summer:
+      start: "2021-12-01"
+      end: "2022-02-28"
+    fall:
+      start: "2021-03-01"
+      end: "2021-05-31"
+    winter:
+      start: "2021-06-01"
+      end: "2021-08-31"
+    spring:
+      start: "2021-09-01"
+      end: "2021-11-30"
+
+  days_per_season:
+    summer: 90
+    winter: 92
+    spring: 91
+    fall: 92
+
+  regions:
+    - Norte_Amazonia
+
+  seasons:
+    - summer
+
+  # Simulation levels determine at which level the simulation will run.
+  # Options: "energy_service" (individual services like lighting, refrigeration),
+  # "user_type" (low_consumption, high_consumption users),
+  # "sector" (households, community services, income-generating activities),
+  # "community" (full community simulation including all sectors).
+  simulation_levels:
+    - energy_service
+    - community
+    
+
+  sectors:
+    households:
+      sufficiency:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+          - thermal_comfort
+          - water_heating
+
+    community_services:
+      big_school:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+          - space_cooling
+
+      health_center:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+          - space_cooling
+          - water_heating
+          - water_supply
+          - medical_equip
+
+      public_lighting:
+        count: 1
+        energy_service:
+          - illumination
+
+    income_generating_activity:
+      entertainment_business:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+
+      flour_processing:
+        count: 1
+        energy_service:
+          - flour_processing
+
+      restaurant:
+        count: 1
+        energy_service:
+          - illumination
+          - cold_storage
+          - kitchen
+
+      store:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+
+      workshop:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - machinery
