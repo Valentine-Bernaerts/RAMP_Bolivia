@@ -12,7 +12,7 @@ ICT_Phone_charger.windows([480,720],[900,1440],0.35)
 ICT_TV = ICT.add_appliance(2,60,2,360,0.1,30)
 ICT_TV.windows([480,720],[780,1020],0.2)
 
-ICT_radio = ICT.add_appliance(2,35,2,360,0.2,60)
+ICT_radio = ICT.add_appliance(2,5,2,360,0.2,60)
 ICT_radio.windows([480,720],[780,1020],0.35)
 
 ICT_PC = ICT.add_appliance(2,150,2,300,0.1,10)

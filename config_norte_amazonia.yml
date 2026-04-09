@@ -1,9 +1,9 @@
 simulation_settings:
 
-  # Seasonal simulation: runs only specified seasons
-  simulation_mode: "seasonal"
+  # Full year simulation: runs all 4 seasons and concatenates
+  simulation_mode: "full_year"
 
-  # Not used in seasonal mode
+  # Not used in full_year mode, but kept for compatibility
   date_start: "2020-01-01"
   date_end: "2020-12-31"
 
@@ -29,15 +29,18 @@ simulation_settings:
 
   days_per_season:
     summer: 90
+    fall: 92
     winter: 92
     spring: 91
-    fall: 92
 
   regions:
     - Norte_Amazonia
 
   seasons:
     - summer
+    - fall
+    - winter
+    - spring
 
   # Simulation levels determine at which level the simulation will run.
   # Options: "energy_service" (individual services like lighting, refrigeration),
@@ -58,7 +61,7 @@ simulation_settings:
           - ICT
           - cold_storage
           - thermal_comfort
-          - water_heating
+          # - water_heating removed — see justification
 
     community_services:
       big_school:
@@ -93,10 +96,10 @@ simulation_settings:
           - ICT
           - cold_storage
 
-      flour_processing:
+      rice_processing:
         count: 1
         energy_service:
-          - flour_processing
+          - rice_processing
 
       restaurant:
         count: 1

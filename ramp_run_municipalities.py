@@ -13,6 +13,8 @@ from collections import defaultdict
 import time
 import argparse
 
+FUNC_CYCLE_ERROR_TEXT = "The func_cycle you choose"
+
 COLUMN_TO_SECTOR = {
     'non_elec_hh':            ('households', 'sufficiency'),
     'school':                 ('community_services', 'big_school'),
@@ -22,7 +24,7 @@ COLUMN_TO_SECTOR = {
     'restaurant':             ('income_generating_activity', 'restaurant'),
     'workshop':               ('income_generating_activity', 'workshop'),
     'entertainment_business': ('income_generating_activity', 'entertainment_business'),
-    'flour_processing':       ('income_generating_activity', 'flour_processing'),
+    'rice_processing':        ('income_generating_activity', 'rice_processing'),
 }
 
 def load_user_input(filepath):
@@ -95,7 +97,22 @@ def collect_users(config, base_input_dir, season, counts=None):
 
     return users_by_level
 
-def run_simulations(config, base_input_dir, output_dir, counts=None):
+
+def generate_profiles_with_retry(users, date_start, date_end, level, key, season, municipality, max_retries=3):
+    for attempt in range(1, max_retries + 1):
+        try:
+            use_case = UseCase(users=users, date_start=date_start, date_end=date_end)
+            return use_case.generate_daily_load_profiles()
+        except ValueError as e:
+            if FUNC_CYCLE_ERROR_TEXT in str(e) and attempt < max_retries:
+                print(
+                    f"Warning: stochastic func_cycle conflict for {municipality} | {season} | {level} | {key} "
+                    f"(attempt {attempt}/{max_retries}), retrying..."
+                )
+                continue
+            raise
+
+def run_simulations(config, base_input_dir, output_dir, counts, municipality):
     os.makedirs(output_dir, exist_ok=True)
     sim_settings = config['simulation_settings']
     simulation_mode = sim_settings.get('simulation_mode', 'seasonal')
@@ -103,19 +120,29 @@ def run_simulations(config, base_input_dir, output_dir, counts=None):
 
     region = sim_settings['regions'][0]
 
+    os.environ['RAMP_MUNICIPALITY'] = municipality
+
     for level in sim_settings['simulation_levels']:
         if is_full_year and level == 'energy_service':
             seasonal_outputs = defaultdict(list)
 
             for season in sim_settings['seasons']:
                 date_start, date_end, _ = get_simulation_dates(config, season)
+                os.environ['RAMP_SEASON'] = season
                 users_by_level = collect_users(config, base_input_dir, season, counts)
                 matching_keys = [k for k in users_by_level if k.startswith(level)]
 
                 for key in matching_keys:
                     users = users_by_level[key]
-                    use_case = UseCase(users=users, date_start=date_start, date_end=date_end)
-                    result = use_case.generate_daily_load_profiles()
+                    result = generate_profiles_with_retry(
+                        users=users,
+                        date_start=date_start,
+                        date_end=date_end,
+                        level=level,
+                        key=key,
+                        season=season,
+                        municipality=municipality,
+                    )
                     df = pd.DataFrame(result)
                     df.index.name = 'time'
 
@@ -146,14 +173,22 @@ def run_simulations(config, base_input_dir, output_dir, counts=None):
         else:
             for season in sim_settings['seasons']:
                 date_start, date_end, _ = get_simulation_dates(config, season)
+                os.environ['RAMP_SEASON'] = season
                 users_by_level = collect_users(config, base_input_dir, season, counts)
                 matching_keys = [k for k in users_by_level if k.startswith(level)]
 
                 season_dfs = []
                 for key in matching_keys:
                     users = users_by_level[key]
-                    use_case = UseCase(users=users, date_start=date_start, date_end=date_end)
-                    result = use_case.generate_daily_load_profiles()
+                    result = generate_profiles_with_retry(
+                        users=users,
+                        date_start=date_start,
+                        date_end=date_end,
+                        level=level,
+                        key=key,
+                        season=season,
+                        municipality=municipality,
+                    )
                     df = pd.DataFrame(result)
                     df.index.name = 'time'
 
@@ -192,7 +227,7 @@ def main():
         config = yaml.safe_load(f)
 
     # Read municipalities data
-    df = pd.read_csv('municipalities_counts.csv')
+    df = pd.read_csv('data/municipalities_counts.csv')
     
     # Skip TOTAL row
     df = df[df['municipality'] != 'TOTAL']
@@ -220,7 +255,7 @@ def main():
         output_dir = f"output_norte_amazonia/{municipality}"
         
         try:
-            run_simulations(config, base_input_dir, output_dir, counts)
+            run_simulations(config, base_input_dir, output_dir, counts, municipality)
         except Exception as e:
             print(f"❌ Error in {municipality}: {e}")
             continue

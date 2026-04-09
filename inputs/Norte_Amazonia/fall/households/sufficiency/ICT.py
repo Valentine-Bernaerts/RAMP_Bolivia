@@ -17,7 +17,7 @@ User_list.append(HICT)
 HICT_TV = HICT.add_appliance(1,30,2,120,0.1,5) 
 HICT_TV.windows([1080,1440],[0,60],0.35)
 
-HICT_Radio = HICT.add_appliance(1,36,2,120,0.1,5)
+HICT_Radio = HICT.add_appliance(1,3,2,120,0.1,5)
 HICT_Radio.windows([390,450],[1082,1260],0.35)
 
 HICT_Phone_charger = HICT.add_appliance(4,5,2,120,0.2,10)
