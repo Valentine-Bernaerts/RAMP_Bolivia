@@ -9,8 +9,8 @@ simulation_settings:
 
   peak_enlarge: 0.15
 
-  municipalities_counts: "data/municipalities_counts.csv"
-  output_folder: 'output_norte_amazonia'
+  municipalities_counts: "data/municipalities_counts_total.csv"
+  output_folder: 'output_norte_amazonia_total'
   parallel: false
 
   # Season date ranges (Southern Hemisphere)
@@ -51,7 +51,7 @@ simulation_settings:
   simulation_levels:
     - energy_service
     - community
-    
+
 
   sectors:
     households:
