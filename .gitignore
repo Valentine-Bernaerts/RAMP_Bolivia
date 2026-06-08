@@ -136,3 +136,8 @@ config_roger.yml
 outputs/*.csv
 /output/
 output_norte_amazonia/
+output_norte_amazonia_reality/
+output_*/
+
+# Claude Code
+.claude/

@@ -53,10 +53,10 @@ H_Blender.windows([420, 480], [660, 750], 0.35, [1140, 1200])
 #H_shower.windows([360,540],[1080,1260],0.2) #Use thermal series from lowlands
 
 #ICT
-H_TV = H.Appliance(1,150,2,120,0.1,5) 
+H_TV = H.Appliance(1,150,2,120,0.1,5)
 H_TV.windows([1080,1440],[0,60],0.35)
 
-H_Radio = H.Appliance(1,36,2,120,0.1,5)
+H_Radio = H.Appliance(1,3,2,120,0.1,5)
 H_Radio.windows([390,450],[1082,1260],0.35)
 
 H_Phone_charger = H.Appliance(4,5,2,120,0.2,10)
@@ -107,7 +107,7 @@ H_washing_machine.windows([420, 600], [1020, 1260], 0.35)
 H_TV = H.Appliance(1,30,2,120,0.1,5)
 H_TV.windows([1080,1440],[0,60],0.35)
 
-H_Radio = H.Appliance(1,36,2,120,0.1,5)
+H_Radio = H.Appliance(1,3,2,120,0.1,5)
 H_Radio.windows([390,450],[1082,1260],0.35)
 
 H_Phone_charger = H.Appliance(4,5,2,120,0.2,10)

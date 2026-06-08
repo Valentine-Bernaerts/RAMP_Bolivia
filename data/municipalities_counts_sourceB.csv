@@ -1,0 +1,23 @@
+department,municipality,hh_sourceB,persons_sourceB,school,health_center,public_lighting,store,restaurant,workshop,entertainment_business,rice_processing
+Beni,Exaltación,890,4777,12,0,0,29,29,14,14,4
+Beni,Guayaramerín,646,2380,5,0,0,21,21,10,10,3
+Beni,Reyes,353,1166,6,0,0,11,11,5,5,1
+Beni,Riberalta,1396,5485,6,0,0,46,46,23,23,6
+Beni,Santa_Rosa_Beni,620,2465,6,0,0,20,20,10,10,3
+La Paz,Ixiamas,793,2718,12,0,0,26,26,13,13,3
+Pando,Bella_Flor,315,873,4,0,0,10,10,5,5,1
+Pando,Bolpebra,393,1146,8,0,0,13,13,6,6,1
+Pando,Cobija,248,827,1,0,0,8,8,4,4,1
+Pando,Filadelfia,608,1933,10,0,0,20,20,10,10,3
+Pando,Ingavi,275,1078,6,0,0,9,9,4,4,1
+Pando,Nueva_Esperanza,267,858,5,0,0,8,8,4,4,1
+Pando,Porvenir,217,885,3,0,0,7,7,3,3,1
+Pando,Puerto_Gonzalo_Moreno,232,1388,2,0,0,7,7,3,3,1
+Pando,Puerto_Rico,320,1105,8,0,0,10,10,5,5,1
+Pando,San_Lorenzo,260,1349,4,0,0,8,8,4,4,1
+Pando,San_Pedro,241,1279,4,0,0,8,8,4,4,1
+Pando,Santa_Rosa_Pando,143,470,3,0,0,4,4,2,2,0
+Pando,Santos_Mercado,205,778,4,0,0,6,6,3,3,1
+Pando,Sena,682,2431,11,0,0,22,22,11,11,3
+Pando,Villa_Nueva,221,776,5,0,0,7,7,3,3,1
+Amazonia_Norte,TOTAL,9325,36167,125,0,0,300,300,146,146,38

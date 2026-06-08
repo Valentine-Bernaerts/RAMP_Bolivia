@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Per-Municipality RAMP Runner for Norte Amazónica
 Runs RAMP simulations separately for each municipality using infrastructure counts from CSV.
@@ -14,18 +13,6 @@ import time
 import argparse
 
 FUNC_CYCLE_ERROR_TEXT = "The func_cycle you choose"
-
-COLUMN_TO_SECTOR = {
-    'non_elec_hh':            ('households', 'sufficiency'),
-    'school':                 ('community_services', 'big_school'),
-    'health_center':          ('community_services', 'health_center'),
-    'public_lighting':        ('community_services', 'public_lighting'),
-    'store':                  ('income_generating_activity', 'store'),
-    'restaurant':             ('income_generating_activity', 'restaurant'),
-    'workshop':               ('income_generating_activity', 'workshop'),
-    'entertainment_business': ('income_generating_activity', 'entertainment_business'),
-    'rice_processing':        ('income_generating_activity', 'rice_processing'),
-}
 
 def load_user_input(filepath):
     try:
@@ -45,7 +32,7 @@ def get_simulation_dates(config, season=None):
     sim_settings = config['simulation_settings']
     mode = sim_settings.get('simulation_mode', 'seasonal')
 
-    if mode == 'date_range': 
+    if mode == 'date_range':
         date_start = pd.to_datetime(sim_settings['date_start'])
         date_end = pd.to_datetime(sim_settings['date_end'])
         days = (date_end - date_start).days + 1
@@ -219,49 +206,105 @@ def run_simulations(config, base_input_dir, output_dir, counts, municipality):
 
 def main():
     parser = argparse.ArgumentParser(description='Run RAMP simulations per municipality')
+    parser.add_argument('--config', default='config_norte_amazonia.yml', help='Path to config YAML file')
     parser.add_argument('--test', nargs='*', help='List of municipalities to test (optional)')
     args = parser.parse_args()
 
     # Load base config
-    with open("config_norte_amazonia.yml", "r") as f:
+    with open(args.config, "r") as f:
         config = yaml.safe_load(f)
 
-    # Read municipalities data
-    df = pd.read_csv('data/municipalities_counts.csv')
-    
-    # Skip TOTAL row
-    df = df[df['municipality'] != 'TOTAL']
-    
+    # =====================================================================
+    # ⚙️ CONFIGURATION DIRECTORY
+    # Auto-selects files and folders based on the config file name
+    # =====================================================================
+    if "total" in args.config:
+        # ▶️ MODE: TOTAL POPULATION
+        counts_file = 'data/municipalities_counts_total.csv'
+        base_output = 'output_norte_amazonia_total'
+        hh_col = 'total_hh'
+    elif "reality" in args.config:
+        # ▶️ MODE: REALITY (Source B, off-grid electrified)
+        counts_file = 'data/municipalities_counts_sourceB.csv'
+        base_output = 'output_norte_amazonia_reality'
+        hh_col = 'hh_sourceB'
+    else:
+        # ▶️ MODE: NON-ELECTRIFIED POPULATION (Default)
+        counts_file = 'data/municipalities_counts.csv'
+        base_output = 'output_norte_amazonia'
+        hh_col = 'non_elec_hh'
+    # =====================================================================
+
+    # Simple and readable dictionary mapping
+    column_to_sector = {
+        hh_col:                   ('households', 'sufficiency'),
+        'school':                 ('community_services', 'big_school'),
+        'health_center':          ('community_services', 'health_center'),
+        'public_lighting':        ('community_services', 'public_lighting'),
+        'store':                  ('income_generating_activity', 'store'),
+        'restaurant':             ('income_generating_activity', 'restaurant'),
+        'workshop':               ('income_generating_activity', 'workshop'),
+        'entertainment_business': ('income_generating_activity', 'entertainment_business'),
+        'rice_processing':        ('income_generating_activity', 'rice_processing'),
+    }
+
+    df = pd.read_csv(counts_file)
+    df = df[df['municipality'] != 'TOTAL']  # Skip TOTAL row
+
     # Filter for test municipalities if provided
     if args.test:
         df = df[df['municipality'].isin(args.test)]
-    
+
     total_munis = len(df)
     base_input_dir = "inputs"
-    
     start_time = time.time()
-    
+
     for idx, row in df.iterrows():
         municipality = row['municipality']
-        hh_count = int(row['non_elec_hh'])
+        
+        # Use dynamic hh_col variable to find the correct household count
+        hh_count = int(row[hh_col])
         print(f"Running {idx+1}/{total_munis}: {municipality} ({hh_count} HH)...")
-        
-        # Build counts dict from CSV
+
         counts = {}
-        for col, (sector, user_type) in COLUMN_TO_SECTOR.items():
+        for col, (sector, user_type) in column_to_sector.items():
             counts[(sector, user_type)] = int(row[col])
-        
-        # Set output directory for this municipality
-        output_dir = f"output_norte_amazonia/{municipality}"
+
+        # Use the correct output directory based on the selected mode
+        output_dir = f"{base_output}/{municipality}"
         
         try:
             run_simulations(config, base_input_dir, output_dir, counts, municipality)
         except Exception as e:
             print(f"❌ Error in {municipality}: {e}")
             continue
-    
+
     end_time = time.time()
     print(f"\n✅ Total execution time: {end_time - start_time:.2f} seconds")
 
 if __name__ == "__main__":
     main()
+
+
+"""
+=========================================
+HOW TO RUN THIS SCRIPT
+=========================================
+1. Open terminal: Ubuntu (WSL)
+2. Activate environment:
+   conda activate ramp
+
+3. Run the simulation:
+   # For non-electrified population
+   python ramp_run_municipalities.py --config config_norte_amazonia.yml
+
+   # For total population
+   python ramp_run_municipalities.py --config config_sufficiency_total.yml
+
+   # For reality scenario (Source B, off-grid electrified)
+   python ramp_run_municipalities.py --config config_reality.yml
+
+   # To test specific municipalities, add the --test flag:
+   python ramp_run_municipalities.py --config config_norte_amazonia.yml --test "Municipality Name"
+=========================================
+"""

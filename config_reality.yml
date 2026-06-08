@@ -1,0 +1,105 @@
+simulation_settings:
+
+  # Full year simulation: runs all 4 seasons and concatenates
+  simulation_mode: "full_year"
+
+  # Not used in full_year mode, but kept for compatibility
+  date_start: "2020-01-01"
+  date_end: "2020-12-31"
+
+  peak_enlarge: 0.15
+
+  municipalities_counts: "data/municipalities_counts_sourceB.csv"
+  output_folder: 'output_norte_amazonia_reality'
+  parallel: false
+
+  # Season date ranges (Southern Hemisphere)
+  season_dates:
+    summer:
+      start: "2021-12-01"
+      end: "2022-02-28"
+    fall:
+      start: "2021-03-01"
+      end: "2021-05-31"
+    winter:
+      start: "2021-06-01"
+      end: "2021-08-31"
+    spring:
+      start: "2021-09-01"
+      end: "2021-11-30"
+
+  days_per_season:
+    summer: 90
+    fall: 92
+    winter: 92
+    spring: 91
+
+  regions:
+    - Norte_Amazonia_reality
+
+  seasons:
+    - summer
+    - fall
+    - winter
+    - spring
+
+  # Simulation levels determine at which level the simulation will run.
+  # Options: "energy_service" (individual services like lighting, refrigeration),
+  # "user_type" (low_consumption, high_consumption users),
+  # "sector" (households, community services, income-generating activities),
+  # "community" (full community simulation including all sectors).
+  simulation_levels:
+    - energy_service
+    - community
+
+
+  sectors:
+    households:
+      sufficiency:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+          - thermal_comfort
+
+    community_services:
+      small_school:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+
+    income_generating_activity:
+      entertainment_business:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+
+      rice_processing:
+        count: 1
+        energy_service:
+          - rice_processing
+
+      restaurant:
+        count: 1
+        energy_service:
+          - illumination
+          - cold_storage
+          - kitchen
+
+      store:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - cold_storage
+
+      workshop:
+        count: 1
+        energy_service:
+          - illumination
+          - ICT
+          - machinery
