@@ -50,7 +50,8 @@ def _find_row(municipality):
                 return row
     return None
 
-REDUCTION_FACTOR = 0.7  # off-grid capacity constraint
+TV_FACTOR = 1.0  # MTF Tier 2: solar home system includes TV
+LAPTOP_FACTOR = 0.65  # MTF blended solar/generator retention (53/47)
 
 municipality = os.environ.get("RAMP_MUNICIPALITY", "")
 
@@ -76,8 +77,8 @@ User_list = []
 HICT = User("household ICT", 1)
 User_list.append(HICT)
 
-# TV: census ownership rate x REDUCTION_FACTOR (off-grid capacity constraint)
-HICT_TV = HICT.add_appliance(1, 30, 2, 120, 0.1, 5, occasional_use=_rates["tv"] * REDUCTION_FACTOR)
+# TV: census ownership rate x MTF Tier 2 factor (SHS explicitly includes TV)
+HICT_TV = HICT.add_appliance(1, 30, 2, 120, 0.1, 5, occasional_use=_rates["tv"] * TV_FACTOR)
 HICT_TV.windows([1080, 1440], [0, 60], 0.35)
 
 # Radio: census ownership rate, no reduction (low-power, small-solar compatible)
@@ -88,6 +89,6 @@ HICT_Radio.windows([390, 450], [1082, 1260], 0.35)
 HICT_Phone_charger = HICT.add_appliance(4, 5, 2, 120, 0.2, 10, occasional_use=_rates["phone"])
 HICT_Phone_charger.windows([1020, 1440], [0, 300], 0.35)
 
-# Laptop: census ownership rate x REDUCTION_FACTOR
-HICT_Laptop = HICT.add_appliance(1, 70, 1, 90, 0.3, 30, occasional_use=_rates["laptop"] * REDUCTION_FACTOR)
+# Laptop: census ownership rate x MTF blended solar/generator factor
+HICT_Laptop = HICT.add_appliance(1, 70, 1, 90, 0.3, 30, occasional_use=_rates["laptop"] * LAPTOP_FACTOR)
 HICT_Laptop.windows([960, 1200], [0, 0], 0.35)

@@ -1,29 +1,30 @@
 from ramp.core.core import User
-import csv, os, unicodedata
 import pandas as pd
+import csv, os, unicodedata
 
+# Maps RAMP_MUNICIPALITY env var -> (CSV MUNICIPIO name, CSV DEPARTAMENTO)
 _MUNI_MAP = {
-    "Exaltacion":            ("Exaltación",          "Beni"),
-    "Guayaramerin":          ("Guayaramerín",         "Beni"),
-    "Reyes":                 ("Reyes",                "Beni"),
-    "Riberalta":             ("Riberalta",            "Beni"),
-    "Santa_Rosa_Beni":       ("Santa Rosa",           "Beni"),
-    "Ixiamas":               ("Ixiamas",              "La Paz"),
-    "Bella_Flor":            ("Bella Flor",           "Pando"),
-    "Bolpebra":              ("Bolpebra",             "Pando"),
-    "Cobija":                ("Cobija",               "Pando"),
-    "Filadelfia":            ("Filadelfia",           "Pando"),
-    "Ingavi":                ("Ingavi",               "Pando"),
-    "Nueva_Esperanza":       ("Nueva Esperanza",      "Pando"),
-    "Porvenir":              ("Porvenir",             "Pando"),
-    "Puerto_Gonzalo_Moreno": ("Puerto Gonzalo Moreno","Pando"),
-    "Puerto_Rico":           ("Puerto Rico",          "Pando"),
-    "San_Lorenzo":           ("San Lorenzo",          "Pando"),
-    "San_Pedro":             ("San Pedro",            "Pando"),
-    "Santa_Rosa_Pando":      ("Santa Rosa",           "Pando"),
-    "Santos_Mercado":        ("Santos Mercado",       "Pando"),
-    "Sena":                  ("Sena",                 "Pando"),
-    "Villa_Nueva":           ("Villa Nueva",          "Pando"),
+    "Exaltacion":            ("Exaltación",         "Beni"),
+    "Guayaramerin":          ("Guayaramerín",        "Beni"),
+    "Reyes":                 ("Reyes",                  "Beni"),
+    "Riberalta":             ("Riberalta",              "Beni"),
+    "Santa_Rosa_Beni":       ("Santa Rosa",             "Beni"),
+    "Ixiamas":               ("Ixiamas",                "La Paz"),
+    "Bella_Flor":            ("Bella Flor",             "Pando"),
+    "Bolpebra":              ("Bolpebra",               "Pando"),
+    "Cobija":                ("Cobija",                 "Pando"),
+    "Filadelfia":            ("Filadelfia",             "Pando"),
+    "Ingavi":                ("Ingavi",                 "Pando"),
+    "Nueva_Esperanza":       ("Nueva Esperanza",        "Pando"),
+    "Porvenir":              ("Porvenir",               "Pando"),
+    "Puerto_Gonzalo_Moreno": ("Puerto Gonzalo Moreno",  "Pando"),
+    "Puerto_Rico":           ("Puerto Rico",            "Pando"),
+    "San_Lorenzo":           ("San Lorenzo",            "Pando"),
+    "San_Pedro":             ("San Pedro",              "Pando"),
+    "Santa_Rosa_Pando":      ("Santa Rosa",             "Pando"),
+    "Santos_Mercado":        ("Santos Mercado",         "Pando"),
+    "Sena":                  ("Sena",                   "Pando"),
+    "Villa_Nueva":           ("Villa Nueva",            "Pando"),
 }
 
 def _csv_path():
@@ -50,12 +51,14 @@ def _find_row(municipality):
                 return row
     return None
 
-REDUCTION_FACTOR = 0.7  # off-grid capacity constraint
+FAN_FACTOR = 1.0  # MTF Tier 2: fan grouped with TV
 
-municipality = os.environ.get('RAMP_MUNICIPALITY')
+municipality = os.environ.get('RAMP_MUNICIPALITY', '')
 season = os.environ.get('RAMP_SEASON')
 
-# No census fan ownership rate; indexed on TV ownership (comparable comfort appliance) x 0.7 off-grid factor.
+# No dedicated census fan question; MTF groups the fan with TV at Tier 2,
+# so retention is indexed on TV ownership (cols 110/111). Fallback 0.1 only
+# applies when the municipality has no census row.
 _census_row = _find_row(municipality) if municipality else None
 tv_rate = _rate(_census_row[110], _census_row[111]) if _census_row is not None else 0.1
 
@@ -77,6 +80,6 @@ User_list = []
 HSC = User('household space cooling', 1)
 User_list.append(HSC)
 
-# No census fan ownership rate; indexed on TV ownership (comparable comfort appliance) x 0.7 off-grid factor.
-HSC_Fan = HSC.add_appliance(1, 30, 2, func_time, 0.27, 30, occasional_use=tv_rate * REDUCTION_FACTOR)
+# Fan: no census fan ownership rate; indexed on TV ownership x MTF Tier 2 factor
+HSC_Fan = HSC.add_appliance(1, 30, 2, func_time, 0.27, 30, occasional_use=tv_rate * FAN_FACTOR)
 HSC_Fan.windows([480, 1260], [0, 0], 0.35)

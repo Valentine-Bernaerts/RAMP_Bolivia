@@ -50,7 +50,7 @@ def _find_row(municipality):
                 return row
     return None
 
-REDUCTION_FACTOR = 0.7  # off-grid capacity constraint
+FRIDGE_FACTOR = 0.28  # MTF Tier 3 load; solar-only (Tier 2) can't run it
 
 municipality = os.environ.get("RAMP_MUNICIPALITY", "")
 
@@ -67,9 +67,9 @@ User_list = []
 HCS = User("household cold storage", 1)
 User_list.append(HCS)
 
-# Fridge/freezer: census ownership rate x REDUCTION_FACTOR
+# Fridge/freezer: census ownership rate x MTF blended factor (generator share only)
 HCS_Freezer = HCS.add_appliance(1, 200, 1, 1440, 0, 30, "yes", 3,
-                                occasional_use=_fridge_rate * REDUCTION_FACTOR)
+                                occasional_use=_fridge_rate * FRIDGE_FACTOR)
 HCS_Freezer.windows([0, 1440], [0, 0])
 HCS_Freezer.specific_cycle_1(200, 20, 5, 10)  # intensivo
 HCS_Freezer.specific_cycle_2(200, 15, 5, 15)  # intermedio

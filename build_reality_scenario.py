@@ -12,7 +12,28 @@ SRC     = os.path.join(ROOT, "inputs", "Norte_Amazonia")
 DST     = os.path.join(ROOT, "inputs", "Norte_Amazonia_reality")
 SEASONS = ["fall", "spring", "summer", "winter"]
 
-REDUCTION_FACTOR = 0.7   # off-grid capacity constraint (documented assumption)
+# ESMAP Multi-Tier Framework (Bhatia & Angelou 2015, "Beyond Connections -
+# Energy Access Redefined"), Table 2 service matrix and tier->source mapping:
+#   - Solar home system (SHS) -> MTF Tier 2
+#   - Generator / mini-grid   -> MTF Tier 3 (adds fridge-capable loads)
+# Each factor below blends the Source B sub-source mix already computed
+# upstream (~53% solar / 47% generator, "otra" split 50/50) into a single
+# retention factor per appliance, applied once on the existing hh_sourceB
+# user-type (sub-sources are NOT split into separate RAMP users).
+#   tv:     Tier 2 explicitly lists TV as a served appliance -> full rate on
+#           both sub-sources (1.00 solar, 1.00 generator) -> blended 1.00
+#   fan:    Tier 2 explicitly lists "fan if needed" -> same as TV -> 1.00
+#   laptop: medium-power appliance, partially served at Tier 2 -> 0.5 (solar)
+#           / 0.8 (generator), blended 53/47 -> 0.65
+#   fridge: Tier 3-only load; solar-only households (Tier 2) cannot run a
+#           fridge, so the factor collapses toward the generator share only
+#           -> 0.0 (solar) / 0.6 (generator), blended 53/47 -> 0.28
+MTF_FACTOR = {
+    "tv":     1.00,
+    "fan":    1.00,
+    "laptop": 0.65,
+    "fridge": 0.28,
+}
 
 # Shared municipality-lookup helpers embedded in each file
 MUNI_HELPERS = """\
@@ -88,11 +109,12 @@ def make_illumination(func_time_indoor, window_end_indoor):
     )
 
 
-def make_ict(rf):
+def make_ict(tv_factor, laptop_factor):
     return (
         "from ramp.core.core import User\n"
         + MUNI_HELPERS + "\n"
-        f"REDUCTION_FACTOR = {rf}  # off-grid capacity constraint\n\n"
+        f"TV_FACTOR = {tv_factor}  # MTF Tier 2: solar home system includes TV\n"
+        f"LAPTOP_FACTOR = {laptop_factor}  # MTF blended solar/generator retention (53/47)\n\n"
         'municipality = os.environ.get("RAMP_MUNICIPALITY", "")\n\n'
         "def _load_ict_rates(muni):\n"
         "    row = _find_row(muni)\n"
@@ -113,8 +135,8 @@ def make_ict(rf):
         "User_list = []\n"
         'HICT = User("household ICT", 1)\n'
         "User_list.append(HICT)\n\n"
-        "# TV: census ownership rate x REDUCTION_FACTOR (off-grid capacity constraint)\n"
-        'HICT_TV = HICT.add_appliance(1, 30, 2, 120, 0.1, 5, occasional_use=_rates["tv"] * REDUCTION_FACTOR)\n'
+        "# TV: census ownership rate x MTF Tier 2 factor (SHS explicitly includes TV)\n"
+        'HICT_TV = HICT.add_appliance(1, 30, 2, 120, 0.1, 5, occasional_use=_rates["tv"] * TV_FACTOR)\n'
         "HICT_TV.windows([1080, 1440], [0, 60], 0.35)\n\n"
         "# Radio: census ownership rate, no reduction (low-power, small-solar compatible)\n"
         'HICT_Radio = HICT.add_appliance(1, 3, 2, 120, 0.1, 5, occasional_use=_rates["radio"])\n'
@@ -122,17 +144,17 @@ def make_ict(rf):
         "# Phone charger: census ownership rate, no reduction\n"
         'HICT_Phone_charger = HICT.add_appliance(4, 5, 2, 120, 0.2, 10, occasional_use=_rates["phone"])\n'
         "HICT_Phone_charger.windows([1020, 1440], [0, 300], 0.35)\n\n"
-        "# Laptop: census ownership rate x REDUCTION_FACTOR\n"
-        'HICT_Laptop = HICT.add_appliance(1, 70, 1, 90, 0.3, 30, occasional_use=_rates["laptop"] * REDUCTION_FACTOR)\n'
+        "# Laptop: census ownership rate x MTF blended solar/generator factor\n"
+        'HICT_Laptop = HICT.add_appliance(1, 70, 1, 90, 0.3, 30, occasional_use=_rates["laptop"] * LAPTOP_FACTOR)\n'
         "HICT_Laptop.windows([960, 1200], [0, 0], 0.35)\n"
     )
 
 
-def make_cold_storage(rf):
+def make_cold_storage(fridge_factor):
     return (
         "from ramp.core.core import User\n"
         + MUNI_HELPERS + "\n"
-        f"REDUCTION_FACTOR = {rf}  # off-grid capacity constraint\n\n"
+        f"FRIDGE_FACTOR = {fridge_factor}  # MTF Tier 3 load; solar-only (Tier 2) can't run it\n\n"
         'municipality = os.environ.get("RAMP_MUNICIPALITY", "")\n\n'
         "def _load_fridge_rate(muni):\n"
         "    row = _find_row(muni)\n"
@@ -144,9 +166,9 @@ def make_cold_storage(rf):
         "User_list = []\n"
         'HCS = User("household cold storage", 1)\n'
         "User_list.append(HCS)\n\n"
-        "# Fridge/freezer: census ownership rate x REDUCTION_FACTOR\n"
+        "# Fridge/freezer: census ownership rate x MTF blended factor (generator share only)\n"
         'HCS_Freezer = HCS.add_appliance(1, 200, 1, 1440, 0, 30, "yes", 3,\n'
-        "                                occasional_use=_fridge_rate * REDUCTION_FACTOR)\n"
+        "                                occasional_use=_fridge_rate * FRIDGE_FACTOR)\n"
         "HCS_Freezer.windows([0, 1440], [0, 0])\n"
         "HCS_Freezer.specific_cycle_1(200, 20, 5, 10)  # intensivo\n"
         "HCS_Freezer.specific_cycle_2(200, 15, 5, 15)  # intermedio\n"
@@ -155,14 +177,19 @@ def make_cold_storage(rf):
     )
 
 
-def make_thermal(rf):
+def make_thermal(fan_factor):
     return (
         "from ramp.core.core import User\n"
         "import pandas as pd\n"
-        "import os\n\n"
-        f"REDUCTION_FACTOR = {rf}  # off-grid capacity constraint\n\n"
-        "municipality = os.environ.get('RAMP_MUNICIPALITY')\n"
+        + MUNI_HELPERS + "\n"
+        f"FAN_FACTOR = {fan_factor}  # MTF Tier 2: fan grouped with TV\n\n"
+        "municipality = os.environ.get('RAMP_MUNICIPALITY', '')\n"
         "season = os.environ.get('RAMP_SEASON')\n\n"
+        "# No dedicated census fan question; MTF groups the fan with TV at Tier 2,\n"
+        "# so retention is indexed on TV ownership (cols 110/111). Fallback 0.1 only\n"
+        "# applies when the municipality has no census row.\n"
+        "_census_row = _find_row(municipality) if municipality else None\n"
+        "tv_rate = _rate(_census_row[110], _census_row[111]) if _census_row is not None else 0.1\n\n"
         "if municipality and season:\n"
         "    current_dir = os.path.dirname(os.path.abspath(__file__))\n"
         "    project_root = os.path.abspath(os.path.join(current_dir, '..', '..', '..', '..', '..'))\n"
@@ -179,8 +206,8 @@ def make_thermal(rf):
         "User_list = []\n"
         "HSC = User('household space cooling', 1)\n"
         "User_list.append(HSC)\n\n"
-        "# Fan: no census fan ownership rate; apply REDUCTION_FACTOR to sufficiency penetration (0.27)\n"
-        f"HSC_Fan = HSC.add_appliance(1, 30, 2, func_time, 0.27, 30, occasional_use=0.27 * {rf})\n"
+        "# Fan: no census fan ownership rate; indexed on TV ownership x MTF Tier 2 factor\n"
+        "HSC_Fan = HSC.add_appliance(1, 30, 2, func_time, 0.27, 30, occasional_use=tv_rate * FAN_FACTOR)\n"
         "HSC_Fan.windows([480, 1260], [0, 0], 0.35)\n"
     )
 
@@ -245,14 +272,14 @@ for season in SEASONS:
     write_file(os.path.join(hh_dir, "illumination.py"), make_illumination(ft, we))
     log(f"WRITTEN {season}/households/sufficiency/illumination.py  [occasional_use=1.0 keyword]")
 
-    write_file(os.path.join(hh_dir, "ICT.py"), make_ict(REDUCTION_FACTOR))
-    log(f"WRITTEN {season}/households/sufficiency/ICT.py  [TV/Laptop x{REDUCTION_FACTOR}, Radio/Phone no reduction]")
+    write_file(os.path.join(hh_dir, "ICT.py"), make_ict(MTF_FACTOR["tv"], MTF_FACTOR["laptop"]))
+    log(f"WRITTEN {season}/households/sufficiency/ICT.py  [TV x{MTF_FACTOR['tv']}, Laptop x{MTF_FACTOR['laptop']}, Radio/Phone no reduction]")
 
-    write_file(os.path.join(hh_dir, "cold_storage.py"), make_cold_storage(REDUCTION_FACTOR))
-    log(f"WRITTEN {season}/households/sufficiency/cold_storage.py  [fridge rate x{REDUCTION_FACTOR}]")
+    write_file(os.path.join(hh_dir, "cold_storage.py"), make_cold_storage(MTF_FACTOR["fridge"]))
+    log(f"WRITTEN {season}/households/sufficiency/cold_storage.py  [fridge rate x{MTF_FACTOR['fridge']}]")
 
-    write_file(os.path.join(hh_dir, "thermal_comfort.py"), make_thermal(REDUCTION_FACTOR))
-    log(f"WRITTEN {season}/households/sufficiency/thermal_comfort.py  [fan occasional_use=0.27x{REDUCTION_FACTOR}]")
+    write_file(os.path.join(hh_dir, "thermal_comfort.py"), make_thermal(MTF_FACTOR["fan"]))
+    log(f"WRITTEN {season}/households/sufficiency/thermal_comfort.py  [fan = census TV rate x{MTF_FACTOR['fan']}]")
 
     for rel in [
         os.path.join(season, "income_generating_activity", "workshop", "machinery.py"),
